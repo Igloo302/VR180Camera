@@ -8,13 +8,13 @@ import VR180Protocol
 @MainActor
 final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnectionDelegate {
     @Published var isStreaming = false
-    @Published var statusMessage = "未启动取景"
+    @Published var statusMessage = "Viewfinder Idle"
     @Published var remoteVideoTrack: RTCVideoTrack? = nil
 
     private var factory: RTCPeerConnectionFactory?
     private var peerConnection: RTCPeerConnection?
     private var localIceCandidates: [RTCIceCandidate] = []
-    private var sessionName = UUID().uuidString
+    private var sessionName = UUID().uuidString.lowercased()
     private var isNegotiating = false
 
     override init() {
@@ -28,7 +28,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
     func startViewfinder(cameraIP: String, cameraPort: String, key: SymmetricKey, clockSkew: Int64) {
         guard !isStreaming, !isNegotiating else { return }
         isNegotiating = true
-        statusMessage = "正在初始化 WebRTC 引擎..."
+        statusMessage = "Initializing WebRTC engine..."
 
         sessionName = UUID().uuidString.lowercased()
         localIceCandidates.removeAll()
@@ -53,23 +53,23 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
         )
 
         guard let pc = pcFactory.peerConnection(with: rtcConfig, constraints: constraints, delegate: self) else {
-            statusMessage = "创建 PeerConnection 失败"
+            statusMessage = "Failed to create PeerConnection"
             isNegotiating = false
             return
         }
         self.peerConnection = pc
-        statusMessage = "正在生成 SDP 提议..."
+        statusMessage = "Generating local SDP offer..."
 
         pc.offer(for: constraints) { [weak self] offer, error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 if let error {
-                    self.statusMessage = "创建 Offer 失败: \(error.localizedDescription)"
+                    self.statusMessage = "Failed to create Offer: \(error.localizedDescription)"
                     self.isNegotiating = false
                     return
                 }
                 guard let offer else {
-                    self.statusMessage = "未生成有效的本地 Offer"
+                    self.statusMessage = "No valid local offer generated"
                     self.isNegotiating = false
                     return
                 }
@@ -78,11 +78,11 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
                     Task { @MainActor [weak self] in
                         guard let self else { return }
                         if let setErr {
-                            self.statusMessage = "设置 LocalDescription 失败: \(setErr.localizedDescription)"
+                            self.statusMessage = "Failed to set local description: \(setErr.localizedDescription)"
                             self.isNegotiating = false
                             return
                         }
-                        self.statusMessage = "正在收集 ICE 候选网络节点..."
+                        self.statusMessage = "Gathering ICE candidates..."
                         // Give 1.5 seconds to gather local host & reflexive ICE candidates before sending
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                             self?.sendOfferToCamera(offer: offer, cameraIP: cameraIP, cameraPort: cameraPort, key: key, clockSkew: clockSkew)
@@ -94,7 +94,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
     }
 
     private func sendOfferToCamera(offer: RTCSessionDescription, cameraIP: String, cameraPort: String, key: SymmetricKey, clockSkew: Int64) {
-        statusMessage = "正在与相机交换 SDP 会话..."
+        statusMessage = "Exchanging SDP session with camera..."
 
         let candidates = localIceCandidates.map { (mid: $0.sdpMid ?? "0", mline: Int($0.sdpMLineIndex), sdp: $0.sdp) }
         let requestBody = CameraProtocol.startWebRtcRequest(
@@ -109,7 +109,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
         let urlString = "https://\(cameraIP):\(cameraPort)\(requestPath)"
 
         guard let url = URL(string: urlString) else {
-            statusMessage = "无效的相机端点 URL: \(urlString)"
+            statusMessage = "Invalid camera endpoint URL: \(urlString)"
             isNegotiating = false
             return
         }
@@ -130,14 +130,14 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
                 guard let self else { return }
                 self.isNegotiating = false
                 if let error {
-                    self.statusMessage = "向相机发送 WebRTC 请求失败: \(error.localizedDescription)"
+                    self.statusMessage = "Failed to send WebRTC request to camera: \(error.localizedDescription)"
                     return
                 }
                 guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200, let data else {
                     let code = (response as? HTTPURLResponse)?.statusCode ?? -1
                     let bodyStr = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
                     print("[WebRTC] Camera HTTP error \(code), body: \(bodyStr)")
-                    self.statusMessage = "相机返回 HTTP 错误: \(code)"
+                    self.statusMessage = "Camera returned HTTP error: \(code)"
                     return
                 }
 
@@ -148,30 +148,30 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
                         let statusPB = try PB(statusData)
                         let code = statusPB.optionalUInt(1) ?? 0
                         if code != 0 {
-                            self.statusMessage = "相机拒绝 WebRTC 会话，错误码: \(code)"
+                            self.statusMessage = "Camera rejected WebRTC session, code: \(code)"
                             return
                         }
                     }
 
                     // Field 11 = webrtc_answer (WebRtcSessionDescription)
                     guard let answerData = respPB.fields[11]?.first else {
-                        self.statusMessage = "相机响应中缺少 WebRTC Answer 数据"
+                        self.statusMessage = "WebRTC Answer missing in camera response"
                         return
                     }
 
                     let answerPB = try PB(answerData)
                     guard let sdpBytes = answerPB.fields[1]?.first, let remoteSdp = String(data: sdpBytes, encoding: .utf8) else {
-                        self.statusMessage = "相机 Answer SDP 解析失败"
+                        self.statusMessage = "Failed to parse camera Answer SDP"
                         return
                     }
 
-                    self.statusMessage = "正在建立 P2P 取景通道..."
+                    self.statusMessage = "Establishing P2P viewfinder connection..."
                     let answerDesc = RTCSessionDescription(type: .answer, sdp: remoteSdp)
                     self.peerConnection?.setRemoteDescription(answerDesc) { [weak self] setErr in
                         Task { @MainActor [weak self] in
                             guard let self else { return }
                             if let setErr {
-                                self.statusMessage = "设置 RemoteDescription 失败: \(setErr.localizedDescription)"
+                                self.statusMessage = "Failed to set remote description: \(setErr.localizedDescription)"
                                 return
                             }
 
@@ -191,12 +191,12 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
                                     }
                                 }
                             }
-                            self.statusMessage = "WebRTC 媒体流握手完成，正在接收视频..."
+                            self.statusMessage = "WebRTC handshake completed, waiting for video..."
                             self.isStreaming = true
                         }
                     }
                 } catch {
-                    self.statusMessage = "解析相机响应失败: \(error.localizedDescription)"
+                    self.statusMessage = "Failed to parse camera response: \(error.localizedDescription)"
                 }
             }
         }
@@ -206,7 +206,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
     func stopViewfinder() {
         if isStreaming {
             isStreaming = false
-            statusMessage = "取景已关闭"
+            statusMessage = "Viewfinder stopped"
         }
         peerConnection?.close()
         peerConnection = nil
@@ -223,7 +223,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
             if let videoTrack = stream.videoTracks.first {
                 videoTrack.isEnabled = true
                 self.remoteVideoTrack = videoTrack
-                self.statusMessage = "实时双目画面已就绪"
+                self.statusMessage = "Stereo live stream ready"
                 self.isStreaming = true
             }
         }
@@ -234,7 +234,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
             if let videoTrack = transceiver.receiver.track as? RTCVideoTrack {
                 videoTrack.isEnabled = true
                 self.remoteVideoTrack = videoTrack
-                self.statusMessage = "实时双目画面已就绪"
+                self.statusMessage = "Stereo live stream ready"
                 self.isStreaming = true
             }
         }
@@ -245,7 +245,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
             if let videoTrack = receiver.track as? RTCVideoTrack {
                 videoTrack.isEnabled = true
                 self.remoteVideoTrack = videoTrack
-                self.statusMessage = "实时双目画面已就绪"
+                self.statusMessage = "Stereo live stream ready"
                 self.isStreaming = true
             }
         }
@@ -255,7 +255,7 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
         Task { @MainActor in
             if self.remoteVideoTrack != nil {
                 self.remoteVideoTrack = nil
-                self.statusMessage = "相机视频流已停止"
+                self.statusMessage = "Camera video stream stopped"
             }
         }
     }
@@ -266,12 +266,12 @@ final class WebRtcViewfinderManager: NSObject, ObservableObject, RTCPeerConnecti
         Task { @MainActor in
             switch newState {
             case .connected, .completed:
-                self.statusMessage = "取景画面传输中 (P2P 已建立)"
+                self.statusMessage = "Streaming (P2P Connected)"
                 self.isStreaming = true
             case .checking:
-                self.statusMessage = "正在打通 P2P 网络连接..."
+                self.statusMessage = "Connecting P2P video channel..."
             case .failed, .disconnected:
-                self.statusMessage = "取景连接中断"
+                self.statusMessage = "Viewfinder connection disconnected"
                 self.isStreaming = false
             default:
                 break

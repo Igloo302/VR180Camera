@@ -114,7 +114,7 @@ struct CameraViewfinderSheet: View {
                     Circle()
                         .fill(camera.paired ? Color.green : Color.orange)
                         .frame(width: 8, height: 8)
-                    Text(camera.paired ? "相机已连接" : "未连接")
+                    Text(camera.paired ? "Connected" : "Disconnected")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.white.opacity(0.9))
                 }
@@ -162,7 +162,7 @@ struct CameraViewfinderSheet: View {
                     .foregroundStyle(.white.opacity(0.85))
             }
             .buttonStyle(.plain)
-            .help("刷新相机状态")
+            .help("Refresh Camera Status")
         }
     }
 
@@ -181,7 +181,7 @@ struct CameraViewfinderSheet: View {
                         .foregroundStyle(.white.opacity(0.4))
 
                     VStack(spacing: 6) {
-                        Text("VR180 双目实时取景")
+                        Text("VR180 Stereo Live Viewfinder")
                             .font(.title3.bold())
                             .foregroundStyle(.white)
 
@@ -190,11 +190,11 @@ struct CameraViewfinderSheet: View {
                             .foregroundStyle(.white.opacity(0.8))
 
                         if !camera.hotspotSSID.isEmpty {
-                            Text("Wi-Fi 热点: \(camera.hotspotSSID) · 相机地址: \(camera.cameraIP):\(camera.cameraPort)")
+                            Text("Camera Wi-Fi Hotspot: \(camera.hotspotSSID) · Address: \(camera.cameraIP):\(camera.cameraPort)")
                                 .font(.caption)
                                 .foregroundStyle(.green.opacity(0.9))
                         } else {
-                            Text("当前相机地址: \(camera.cameraIP):\(camera.cameraPort)（若未连接请确保 Mac 已加入相机 Wi-Fi）")
+                            Text("Target Address: \(camera.cameraIP):\(camera.cameraPort) (Ensure Mac is connected to Camera Wi-Fi)")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
                         }
@@ -211,7 +211,7 @@ struct CameraViewfinderSheet: View {
                                 )
                             }
                         }) {
-                            Label(camera.viewfinderManager.isStreaming ? "取景运行中" : "启动 / 重启 WebRTC 取景", systemImage: "play.circle.fill")
+                            Label(camera.viewfinderManager.isStreaming ? "Viewfinder Active" : "Start / Restart WebRTC Viewfinder", systemImage: "play.circle.fill")
                                 .font(.callout.weight(.semibold))
                         }
                         .buttonStyle(.borderedProminent)
@@ -220,7 +220,7 @@ struct CameraViewfinderSheet: View {
 
                         if camera.hotspotSSID.isEmpty {
                             Button(action: { camera.enableHotspot() }) {
-                                Label("获取相机热点", systemImage: "wifi")
+                                Label("Enable Hotspot", systemImage: "wifi")
                                     .font(.callout.weight(.medium))
                             }
                             .buttonStyle(.bordered)
@@ -233,8 +233,8 @@ struct CameraViewfinderSheet: View {
 
             // Dual lens VR180 crosshair guides (like iOS camera reticle)
             HStack(spacing: 80) {
-                LensReticle(label: "LEFT (左眼)")
-                LensReticle(label: "RIGHT (右眼)")
+                LensReticle(label: "LEFT (Eye)")
+                LensReticle(label: "RIGHT (Eye)")
             }
             .opacity(camera.viewfinderManager.remoteVideoTrack != nil ? 0.35 : 0.2)
         }
@@ -243,21 +243,21 @@ struct CameraViewfinderSheet: View {
     // MARK: - Bottom Controls
     private var bottomControls: some View {
         VStack(spacing: 20) {
-            // Mode Selector (视频 | 照片 | 直播)
+            // Mode Selector (Video | Photo | Live Stream)
             HStack(spacing: 32) {
-                ModeTabButton(title: "视频", isSelected: selectedTab == 0) {
+                ModeTabButton(title: "Video", isSelected: selectedTab == 0) {
                     guard selectedTab != 0 else { return }
                     selectedTab = 0
                     camera.setCaptureModeType(0)
                 }
 
-                ModeTabButton(title: "照片", isSelected: selectedTab == 1) {
+                ModeTabButton(title: "Photo", isSelected: selectedTab == 1) {
                     guard selectedTab != 1 else { return }
                     selectedTab = 1
                     camera.setCaptureModeType(1)
                 }
 
-                ModeTabButton(title: "全景直播", isSelected: selectedTab == 2) {
+                ModeTabButton(title: "Live Stream", isSelected: selectedTab == 2) {
                     guard selectedTab != 2 else { return }
                     selectedTab = 2
                     camera.setCaptureModeType(2)
@@ -305,7 +305,7 @@ struct CameraViewfinderSheet: View {
                                 )
                         }
                         .buttonStyle(.plain)
-                        .help("读取媒体库")
+                        .help("Load Media Gallery")
                     }
                     Spacer()
                 }
@@ -409,7 +409,7 @@ struct CameraViewfinderSheet: View {
 
     private func formatStorage(free: UInt64, total: UInt64) -> String {
         let freeGB = Double(free) / 1_073_741_824.0
-        return String(format: "%.1f GB 可用", freeGB)
+        return String(format: "%.1f GB Free", freeGB)
     }
 }
 

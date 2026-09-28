@@ -4,6 +4,10 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 cd "$DIR"
 
+# Ensure developer tool paths take priority to avoid interactive Xcode license prompts
+export PATH="/Library/Developer/CommandLineTools/usr/bin:$PATH"
+export DEVELOPER_DIR="/Library/Developer/CommandLineTools"
+
 echo "==> Building VR180Camera in Release mode..."
 swift build -c release
 
@@ -21,16 +25,16 @@ cat << 'EOF' > "$CONTENTS/Info.plist"
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key><string>VR180 Camera</string>
-    <key>CFBundleDisplayName</key><string>VR180 相机</string>
+    <key>CFBundleDisplayName</key><string>VR180 Camera</string>
     <key>CFBundleIdentifier</key><string>com.vr180.camera</string>
     <key>CFBundleVersion</key><string>1.0.0</string>
     <key>CFBundleShortVersionString</key><string>1.0.0</string>
     <key>CFBundleExecutable</key><string>VR180Camera</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
-    <key>NSBluetoothAlwaysUsageDescription</key><string>用于发现、配对并控制 VR180 相机。</string>
-    <key>NSBluetoothPeripheralUsageDescription</key><string>用于连接 VR180 相机。</string>
-    <key>NSLocalNetworkUsageDescription</key><string>用于与 VR180 相机建立 P2P WebRTC 实时双目取景流与高速媒体文件传输。</string>
+    <key>NSBluetoothAlwaysUsageDescription</key><string>Used to discover, pair, and control VR180 cameras.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key><string>Used to connect to VR180 cameras.</string>
+    <key>NSLocalNetworkUsageDescription</key><string>Used to establish real-time WebRTC stereoscopic live viewfinder and high-speed media transfer with VR180 cameras.</string>
 </dict>
 </plist>
 EOF
@@ -44,7 +48,7 @@ fi
 
 echo "==> Setting rpath and signing app bundle..."
 install_name_tool -add_rpath @executable_path/../Frameworks "$MACOS/VR180Camera" 2>/dev/null || true
-xattr -cr "$APP_NAME"
+xattr -rc "$APP_NAME"
 codesign --force --deep --sign - "$APP_NAME"
 
 echo "==> Build & Packaging Complete! Successfully generated $APP_NAME"

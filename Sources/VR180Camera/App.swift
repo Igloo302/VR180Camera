@@ -3,7 +3,7 @@ import SwiftUI
 @main struct VR180CameraApp: App {
     @StateObject private var camera = CameraManager()
     var body: some Scene {
-        WindowGroup("VR180 相机") {
+        WindowGroup("VR180 Camera") {
             ContentView()
                 .environmentObject(camera)
                 .frame(minWidth: 700, idealWidth: 800, minHeight: 500, idealHeight: 700)
@@ -20,14 +20,14 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("VR180 相机控制端 (macOS)").font(.title2.bold())
+                    Text("VR180 Camera Controller (macOS)").font(.title2.bold())
                     Text(camera.phase).font(.headline).foregroundStyle(.blue)
                 }
                 Spacer()
 
                 // Big iOS Camera Viewfinder Entry
                 Button(action: { showViewfinderSheet = true }) {
-                    Label("进入实时相机取景模式", systemImage: "camera.viewfinder")
+                    Label("Live Viewfinder Mode", systemImage: "camera.viewfinder")
                         .font(.headline)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
@@ -36,17 +36,17 @@ struct ContentView: View {
                 .tint(.purple)
                 .disabled(!camera.paired)
 
-                Button("刷新 / 重新搜索") { camera.scan() }
+                Button("Scan / Refresh") { camera.scan() }
             }
             .sheet(isPresented: $showViewfinderSheet) {
                 CameraViewfinderSheet()
                     .environmentObject(camera)
             }
             
-            GroupBox("1. 相机发现与选择") {
+            GroupBox("1. Camera Discovery & Selection") {
                 VStack(alignment: .leading, spacing: 8) {
                     if camera.cameras.isEmpty {
-                        Text("正在搜索... 请开启相机蓝牙或将相机切换至配对模式（长按拍照键直至蓝绿灯交替闪烁）。")
+                        Text("Scanning for cameras... Ensure Bluetooth is enabled or set camera to pairing mode (hold Shutter until LED blinks blue/green).")
                             .foregroundStyle(.secondary)
                             .padding(.vertical, 4)
                     } else {
@@ -58,7 +58,7 @@ struct ContentView: View {
                                 }
                                 Spacer()
                                 Text("\(item.signal) dBm").font(.caption).monospacedDigit()
-                                Button("连接设备") { camera.connect(item.id) }
+                                Button("Connect") { camera.connect(item.id) }
                                     .buttonStyle(.borderedProminent)
                             }
                             .padding(6)
@@ -69,16 +69,16 @@ struct ContentView: View {
                 }
             }
             
-            GroupBox("2. 配对与安全连接流程") {
+            GroupBox("2. Pairing & Secure Channel Setup") {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 16) {
-                        StepBadge(step: 1, title: "1. 蓝牙连接", active: isStepActive(1), completed: isStepCompleted(1))
+                        StepBadge(step: 1, title: "1. BLE Connect", active: isStepActive(1), completed: isStepCompleted(1))
                         Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                        StepBadge(step: 2, title: "2. 密钥交换", active: isStepActive(2), completed: isStepCompleted(2))
+                        StepBadge(step: 2, title: "2. Key Exchange", active: isStepActive(2), completed: isStepCompleted(2))
                         Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                        StepBadge(step: 3, title: "3. 相机按键确认", active: isStepActive(3), completed: isStepCompleted(3))
+                        StepBadge(step: 3, title: "3. Confirm Button", active: isStepActive(3), completed: isStepCompleted(3))
                         Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                        StepBadge(step: 4, title: "4. 通道建立完成", active: isStepActive(4), completed: isStepCompleted(4))
+                        StepBadge(step: 4, title: "4. Channel Ready", active: isStepActive(4), completed: isStepCompleted(4))
                     }
                     .padding(.vertical, 4)
 
@@ -92,22 +92,22 @@ struct ContentView: View {
                         .cornerRadius(8)
 
                     HStack {
-                        Button("清除本地配对记录（重新配对）") { camera.rePair() }
-                        Button("主动读取状态") { camera.refreshStatus() }.disabled(!camera.paired)
+                        Button("Forget Paired Key (Pair Again)") { camera.rePair() }
+                        Button("Refresh Status") { camera.refreshStatus() }.disabled(!camera.paired)
                         Spacer()
                     }
                 }
                 .padding(4)
             }
             
-            GroupBox("3. 相机状态与拍摄控制") {
+            GroupBox("3. Camera Status & Capture Controls") {
                 VStack(alignment: .leading, spacing: 14) {
                     // Quick Remote Shutter Control Bar
                     HStack(spacing: 16) {
-                        Picker("模式", selection: $camera.currentCaptureType) {
-                            Text("📹 视频").tag(UInt64(0))
-                            Text("📷 照片").tag(UInt64(1))
-                            Text("📡 直播").tag(UInt64(2))
+                        Picker("Mode", selection: $camera.currentCaptureType) {
+                            Text("📹 Video").tag(UInt64(0))
+                            Text("📷 Photo").tag(UInt64(1))
+                            Text("📡 Live").tag(UInt64(2))
                         }
                         .pickerStyle(.segmented)
                         .frame(width: 220)
@@ -117,13 +117,13 @@ struct ContentView: View {
 
                         Button(action: { camera.triggerShutter() }) {
                             if camera.isRecording {
-                                Label("停止录像 (\(camera.recordingDurationSeconds)s)", systemImage: "stop.circle.fill")
+                                Label("Stop Recording (\(camera.recordingDurationSeconds)s)", systemImage: "stop.circle.fill")
                                     .font(.headline)
                             } else if camera.currentCaptureType == 1 {
-                                Label("远程拍照", systemImage: "camera.circle.fill")
+                                Label("Take Photo", systemImage: "camera.circle.fill")
                                     .font(.headline)
                             } else {
-                                Label("开始录像", systemImage: "record.circle")
+                                Label("Start Recording", systemImage: "record.circle")
                                     .font(.headline)
                             }
                         }
@@ -132,7 +132,7 @@ struct ContentView: View {
                         .disabled(!camera.statusReady || camera.isCapturing)
 
                         Button(action: { showViewfinderSheet = true }) {
-                            Label("全屏取景", systemImage: "viewfinder")
+                            Label("Open Viewfinder", systemImage: "viewfinder")
                         }
                         .buttonStyle(.bordered)
                         .disabled(!camera.paired)
@@ -157,83 +157,83 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     HStack {
-                        Text("ISO 步进")
-                        TextField("例如 100", text: $camera.isoText).frame(width: 100)
-                        Button("应用 ISO") { camera.setISO() }.disabled(!camera.statusReady)
+                        Text("ISO Setting")
+                        TextField("e.g. 100", text: $camera.isoText).frame(width: 100)
+                        Button("Apply ISO") { camera.setISO() }.disabled(!camera.statusReady)
                         Spacer()
                     }
                     if !camera.videoModes.isEmpty {
                         HStack {
-                            Text("视频规格").frame(width: 80, alignment: .leading)
+                            Text("Video Mode").frame(width: 90, alignment: .leading)
                             Picker("", selection: $camera.selectedVideo) { ForEach(camera.videoModes) { Text($0.title).tag($0.id) } }.labelsHidden().frame(maxWidth: 240)
-                            Button("应用") { camera.setVideoMode() }.disabled(!camera.statusReady)
+                            Button("Apply") { camera.setVideoMode() }.disabled(!camera.statusReady)
                             Spacer()
                         }
                     }
                     if !camera.photoModes.isEmpty {
                         HStack {
-                            Text("照片规格").frame(width: 80, alignment: .leading)
+                            Text("Photo Mode").frame(width: 90, alignment: .leading)
                             Picker("", selection: $camera.selectedPhoto) { ForEach(camera.photoModes) { Text($0.title).tag($0.id) } }.labelsHidden().frame(maxWidth: 240)
-                            Button("应用") { camera.setPhotoMode() }.disabled(!camera.statusReady)
+                            Button("Apply") { camera.setPhotoMode() }.disabled(!camera.statusReady)
                             Spacer()
                         }
                     }
                     if !camera.liveModes.isEmpty {
                         HStack {
-                            Text("直播规格").frame(width: 80, alignment: .leading)
+                            Text("Live Mode").frame(width: 90, alignment: .leading)
                             Picker("", selection: $camera.selectedLive) { ForEach(camera.liveModes) { Text($0.title).tag($0.id) } }.labelsHidden().frame(maxWidth: 240)
-                            Button("应用") { camera.setLiveMode() }.disabled(!camera.statusReady)
+                            Button("Apply") { camera.setLiveMode() }.disabled(!camera.statusReady)
                             Spacer()
                         }
                     }
                     if camera.supportsFlatColor {
                         HStack {
-                            Toggle("平面色彩", isOn: $camera.flatColor).frame(width: 150)
-                            Button("应用") { camera.setFlatColor() }.disabled(!camera.statusReady)
+                            Toggle("Flat Color", isOn: $camera.flatColor).frame(width: 150)
+                            Button("Apply") { camera.setFlatColor() }.disabled(!camera.statusReady)
                             Spacer()
                         }
                     }
                     if camera.supportsAudio {
                         HStack {
-                            Toggle("快门静音", isOn: $camera.shutterMuted).frame(width: 150)
-                            Button("应用") { camera.setShutterMute() }.disabled(!camera.statusReady)
+                            Toggle("Mute Shutter", isOn: $camera.shutterMuted).frame(width: 150)
+                            Button("Apply") { camera.setShutterMute() }.disabled(!camera.statusReady)
                             Spacer()
                         }
                     }
                 }.padding(8)
             }
             
-            GroupBox("4. 媒体浏览与 HTTPS 文件下载") {
+            GroupBox("4. Media Browser & HTTPS File Transfer") {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Button("📶 开启相机 Wi-Fi 热点") { camera.enableHotspot() }.disabled(!camera.paired).buttonStyle(.borderedProminent)
+                        Button("📶 Enable Camera Wi-Fi Hotspot") { camera.enableHotspot() }.disabled(!camera.paired).buttonStyle(.borderedProminent)
                         Spacer()
-                        Text("相机 IP: ")
+                        Text("Camera IP: ")
                         TextField("IP", text: $camera.cameraIP).frame(width: 110)
-                        Text("端口: ")
+                        Text("Port: ")
                         TextField("Port", text: $camera.cameraPort).frame(width: 50)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("🔑 相机 Wi-Fi 热点信息：").font(.subheadline.bold())
+                                Text("🔑 Camera Wi-Fi Hotspot Details:").font(.subheadline.bold())
                                 HStack {
                                     Text("SSID:").font(.caption)
                                     TextField("SSID", text: $camera.hotspotSSID).font(.caption.bold()).frame(width: 150)
-                                    Text("密码:").font(.caption)
+                                    Text("Password:").font(.caption)
                                     TextField("Password", text: $camera.hotspotPassword).font(.caption.bold().monospaced()).frame(width: 120)
                                 }
                             }
                             Spacer()
-                            Button("⚡️ 自动连接此 Wi-Fi") {
+                            Button("⚡️ Connect Wi-Fi Automatically") {
                                 camera.connectWifi()
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(.green)
                             .disabled(camera.hotspotSSID.isEmpty || camera.hotspotPassword.isEmpty)
 
-                            Button("复制密码") {
+                            Button("Copy Password") {
                                 NSPasteboard.general.clearContents()
                                 NSPasteboard.general.setString(camera.hotspotPassword, forType: .string)
                             }
@@ -245,7 +245,7 @@ struct ContentView: View {
                         .cornerRadius(6)
                     }
 
-                    Text("提示：点击【开启相机 Wi-Fi 热点】后，相机会广播热点。在 Mac 顶部菜单栏连接此热点并输入上方显示的密码。")
+                    Text("Tip: Click 'Enable Camera Wi-Fi Hotspot' to broadcast the camera's AP. Connect your Mac to this Wi-Fi network using the password shown above.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(6)
@@ -253,29 +253,29 @@ struct ContentView: View {
                         .cornerRadius(6)
 
                     HStack {
-                        Button("读取相机媒体文件列表") { camera.listMedia() }.disabled(!camera.paired).buttonStyle(.borderedProminent)
+                        Button("Fetch Media List") { camera.listMedia() }.disabled(!camera.paired).buttonStyle(.borderedProminent)
                         
                         Divider().frame(height: 16)
                         
-                        Button("◀ 上一页") {
+                        Button("◀ Prev") {
                             camera.prevPage()
                         }
                         .disabled(!camera.paired || camera.mediaPageStartIndex == 0)
 
                         if camera.mediaTotalCount > 0 || !camera.mediaList.isEmpty {
-                            Text("第 \(camera.mediaPageStartIndex + 1) ~ \(camera.mediaPageStartIndex + camera.mediaList.count) 项 / 共 \(camera.mediaTotalCount) 项")
+                            Text("Items \(camera.mediaPageStartIndex + 1) ~ \(camera.mediaPageStartIndex + camera.mediaList.count) of \(camera.mediaTotalCount)")
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
 
-                        Button("下一页 ▶") {
+                        Button("Next ▶") {
                             camera.nextPage()
                         }
                         .disabled(!camera.paired || (camera.mediaTotalCount > 0 && camera.mediaPageStartIndex + camera.mediaPageSize >= camera.mediaTotalCount))
 
                         Spacer()
                         
-                        Text("每页数量:")
+                        Text("Per Page:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Picker("", selection: $camera.mediaPageSize) {
@@ -296,7 +296,7 @@ struct ContentView: View {
                             .foregroundStyle(.blue)
                     }
                     if camera.mediaList.isEmpty {
-                        Text("点击“读取相机媒体文件列表”获取相片和视频清单。")
+                        Text("Click 'Fetch Media List' to view photo and video files on the SD card.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.vertical, 4)
@@ -329,7 +329,7 @@ struct ContentView: View {
                                         Text("\(ByteCountFormatter.string(fromByteCount: Int64(item.size), countStyle: .file))")
                                             .font(.caption2)
                                             .foregroundStyle(.secondary)
-                                        Button("下载此文件") {
+                                        Button("Download") {
                                             camera.downloadMedia(item)
                                         }
                                         .buttonStyle(.bordered)
@@ -346,7 +346,7 @@ struct ContentView: View {
                 }.padding(8)
             }
             
-            GroupBox("运行与通信日志") {
+            GroupBox("Operation & Communication Logs") {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(Array(camera.log.enumerated()), id: \.offset) { _, line in
@@ -410,4 +410,3 @@ struct StepBadge: View {
         }
     }
 }
-

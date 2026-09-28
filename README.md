@@ -1,81 +1,83 @@
 # VR180 Camera (macOS)
 
-原生 macOS 平台的 VR180 3D 双目相机桌面客户端应用（全面兼容 Lenovo Mirage Camera 及采用 Google Daydream VR180 协议的相机设备）。
+A native macOS desktop client for VR180 3D stereoscopic cameras, fully compatible with the **Lenovo Mirage Camera with Daydream** and other cameras running the Google Daydream VR180 protocol.
 
 ---
 
-## 核心特性
+## Key Features
 
-- **蓝牙低功耗 (BLE) 自动握手与重连**
-  - 基于 CoreBluetooth 自动扫描相机并建立连接。
-  - 实现 ECDH P-256 密钥协商、HKDF 密钥派生、AES-GCM 加密信道与实体按键物理确认。
-  - 配对密钥持久化存入 macOS Keychain，下次启动自动完成静默重连，无需重复按键配对。
+- **Bluetooth Low Energy (BLE) Auto-Pairing & Reconnection**
+  - Discovers nearby VR180 cameras over CoreBluetooth.
+  - Implements ECDH P-256 key exchange, HKDF key derivation, AES-GCM encrypted control channel, and physical shutter button confirmation.
+  - Pairing credentials persist in the macOS Keychain; subsequent launches automatically and silently reconnect without requiring camera re-pairing.
 
-- **P2P WebRTC 实时双目取景流 (Live Viewfinder)**
-  - 基于官方 Daydream Camera 原生协议，通过 Wi-Fi 建立点对点 WebRTC 双目实时视频通道。
-  - 采用 Metal (`RTCMTLNSVideoView`) 硬件加速渲染，毫秒级超低延迟实时取景。
-  - 自动管理 SDP 协商、ICE 候选网络打通与会话保活。
+- **P2P WebRTC Stereoscopic Live Viewfinder**
+  - Implements Google Daydream Camera's native WebRTC live preview protocol over local Wi-Fi.
+  - Metal-accelerated hardware rendering (`RTCMTLNSVideoView`) for ultra-low latency real-time stereoscopic preview.
+  - Automatic SDP negotiation, ICE candidate handling, and session keep-alives.
 
-- **iOS 风格高保真相机控制界面**
-  - **沉浸式取景窗**：双眼 VR180 对齐十字准星、动态闪光动画、录像中呼吸红点及计时器。
-  - **模式切换**：视频 (Video)、照片 (Photo)、直播 (Live) 一键平滑切换。
-  - **状态徽标**：实时电量指示、SD 卡剩余容量、Wi-Fi/BLE 连接状态显示。
-  - **快门遥控**：支持白圈拍照快门、红圈录像快门动态形变动画。
+- **iOS-Inspired Camera Controls & UI**
+  - **Immersive Viewfinder**: Dual-eye VR180 alignment reticles, tactile shutter animations, live flash feedback, pulsing recording indicator, and elapsed duration counter.
+  - **Shooting Modes**: Fast switching between **Video**, **Photo**, and **Live Stream** modes.
+  - **Live Badges**: Real-time battery indicator with charging state, remaining SD card storage, and Wi-Fi / BLE connectivity status.
+  - **Remote Shutter**: Morphing recording button and responsive photo trigger.
 
-- **Wi-Fi 热点与媒体管理**
-  - 远程读取相机内置 Wi-Fi 热点 SSID/密码，并支持一键通过 macOS 系统服务接入相机热点。
-  - 基于分帧协议的媒体分页列表拉取，防止一次性拉取过多媒体导致卡顿。
-  - 支持单张缩略图预览按需下载与原片高速 HTTPS P2P 下载保存至 Mac 本地。
+- **Wi-Fi Hotspot & Media Management**
+  - Remotely triggers the camera's built-in Wi-Fi Access Point, queries SSID & WPA2 password, and offers one-click automated connection via macOS network services.
+  - Chunked protobuf media list pagination to prevent UI hangs on large SD cards.
+  - High-speed HTTPS transfer with self-signed certificate authentication to preview thumbnails and download full-resolution 3D VR180 photos and videos directly to your `~/Downloads` folder.
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```text
 VR180Camera/
-├── Package.swift               # Swift Package 配置文件 (支持 Swift 6 / 5 语言模式)
-├── README.md                   # 项目使用与架构说明
-├── VALIDATION.md               # Lenovo Mirage 实机通讯校验报告
+├── Package.swift               # Swift Package manifest (Swift 6 & Swift 5 modes)
+├── README.md                   # Project documentation and architecture guide
+├── VALIDATION.md               # Hardware validation report (Lenovo Mirage Camera)
 ├── Scripts/
-│   └── build_app.sh            # 一键编译与生成 macOS App Bundle 脚本
+│   └── build_app.sh            # Release build & macOS .app bundle packaging script
 ├── Sources/
-│   ├── VR180Protocol/          # 底层通信协议库
-│   │   └── Protocol.swift      # Protobuf 编解码、ECDH/HKDF/HMAC 加密及请求体构建
-│   └── VR180Camera/            # macOS 应用程序源码
-│       ├── App.swift           # 主窗口与操作面板
-│       ├── CameraManager.swift # 蓝牙、Wi-Fi、媒体控制核心逻辑
-│       ├── CameraViewfinderSheet.swift # iOS 风格取景器视图
-│       ├── WebRtcViewfinderManager.swift # WebRTC P2P 引擎与视频渲染
-│       └── PairingStore.swift  # Keychain 配对密钥管理
-└── VR180Camera.app/            # 预编译生成的独立 macOS 应用程序
+│   ├── VR180Protocol/          # Low-level protocol library
+│   │   └── Protocol.swift      # Protobuf wire protocol, ECDH/HKDF/HMAC crypto & framing
+│   └── VR180Camera/            # macOS SwiftUI application
+│       ├── App.swift           # Main control panel and settings UI
+│       ├── CameraManager.swift # Bluetooth, Wi-Fi, and media controller core
+│       ├── CameraViewfinderSheet.swift # iOS-style viewfinder modal
+│       ├── WebRtcViewfinderManager.swift # WebRTC P2P client & video renderer
+│       └── PairingStore.swift  # Keychain persistence for pairing credentials
+└── VR180Camera.app/            # Pre-built standalone macOS application bundle
 ```
 
 ---
 
-## 快速构建与运行
+## Building & Running
 
-### 方式一：直接运行预编译 App
-直接双击根目录下的 `VR180Camera.app` 即可启动。
+### Option 1: Run Pre-Built App Bundle
+Double-click `VR180Camera.app` located in the project root directory.
 
-### 方式二：一键脚本重新打包
+### Option 2: Build App Bundle from Source
 ```bash
 ./Scripts/build_app.sh
 ```
-脚本将自动拉取依赖（`WebRTC.xcframework`）、执行 Release 模式编译、拷贝嵌入式 Frameworks、配置 `@executable_path` 并完成本地代码签名。
+The script will resolve dependencies (`WebRTC.xcframework`), compile in Release mode, embed required frameworks, configure `@executable_path`, and codesign the bundle.
 
-### 方式三：命令行开发调试
+### Option 3: Run via Swift Package Manager
 ```bash
 swift run VR180Camera
 ```
 
 ---
 
-## 常见问题与操作指引
+## User Guide & Getting Started
 
-1. **首次配对**：
-   - 相机在关机状态下，长按拍照键直至指示灯蓝绿交替闪烁进入配对模式。
-   - 打开本程序，找到相机并点击连接；当界面提示“步骤 2/3: 请短按相机快门”时，在相机本体上短按一次快门键完成确认。
-   - 完成后密钥将自动保存到 Keychain，后续直接开机即可秒连。
-2. **启动实时取景**：
-   - 确保 Mac 已连接到相机的 Wi-Fi（如 `DIRECT-xx-VR180-xxx`）。
-   - 在程序中点击“进入实时相机取景模式”，窗口打开时将自动与相机协商建立 WebRTC 双目实时流。
+1. **Initial Pairing**:
+   - Power off the camera. Hold the physical Shutter/Photo button until the status LED alternates blue and green (Pairing Mode).
+   - Launch `VR180Camera.app`. Discovered cameras will appear in the list.
+   - Click **Connect**. When the status displays `Step 2/3: Press the camera shutter button!`, press the physical shutter button on the camera once to confirm.
+   - The pairing key will be securely saved to your macOS Keychain for automatic future reconnection.
+
+2. **Starting Real-Time Viewfinder**:
+   - Click **Enable Camera Wi-Fi Hotspot** and connect your Mac to the camera's Wi-Fi network (or use the one-click **Connect Wi-Fi Automatically** button).
+   - Click **Live Viewfinder Mode**. The window will automatically establish a WebRTC stereoscopic video stream with the camera.
