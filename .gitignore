@@ -1,0 +1,13 @@
+# References & Reverse engineering
+references/
+
+# Build artifacts
+.build/
+*.app
+.swiftpm/
+
+# OS and Editor
+.DS_Store
+*.swp
+*~
+*.xcuserstate
